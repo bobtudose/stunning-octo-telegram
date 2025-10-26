@@ -1,0 +1,21 @@
+filebeat.modules:
+  - module: zeek
+    connection:
+      enabled: true
+      var.paths: ["/usr/local/zeek/logs/conn.log"]
+    dns:
+      enabled: true
+      var.paths: ["/usr/local/zeek/logs/dns.log"]
+    http:
+      enabled: true
+      var.paths: ["/usr/local/zeek/logs/http.log"]
+    ssl:
+      enabled: true
+      var.paths: ["/usr/local/zeek/logs/ssl.log"]
+
+output.logstash:
+  hosts: ["logstash:5044"]
+  topic: "filebeat"
+
+setup.kibana:
+  host: "dashboards:5601"

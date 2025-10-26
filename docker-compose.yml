@@ -1,0 +1,92 @@
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.13.0
+    container_name: opensearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=ME5g3/&11t3@
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - opensearch-net
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.13.0
+    container_name: opensearch-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=["https://opensearch:9200"]
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=ME5g3/&11t3@
+    ports:
+      - 5601:5601
+    networks:
+      - opensearch-net
+    depends_on:
+      - opensearch
+
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:7.16.2
+    container_name: logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - 5044:5044
+      - 9600:9600
+    environment:
+      - "LS_JAVA_OPTS=-Xms2g -Xmx2g"
+    networks:
+      - opensearch-net
+    depends_on:
+      - opensearch
+
+  zeek:
+    image: zeek/zeek:latest
+    container_name: zeek
+    network_mode: host # Zeek needs access to network interfaces
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./zeek_logs:/uslogs
+    command: ["zeek", "-i", "enp0s3", "-C"]
+    restart: unless-stopped
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.9.2
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./zeek_logs:/usr/local/zeek/logs
+    depends_on:
+      - logstash
+      - zeek
+    networks:
+      - opensearch-net
+    restart: unless-stopped
+  #filebeat:
+   # image: docker.elastic.co/beats/filebeat:8.9.2
+    #container_name: filebeat
+ #   user: root  # Filebeat needs permission to read log files
+  #  volumes:
+   #   - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+    #  - /var/log:/var/log          # mount host logs (adjust path to where your logs are)
+   # depends_on:
+    #  - logstash
+   # networks:
+    #  - opensearch-net```
+
+
+volumes:
+  opensearch-data:
+
+networks:
+  opensearch-net:
