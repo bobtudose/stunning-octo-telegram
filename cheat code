@@ -1,3 +1,9 @@
 /usr/local/zeek/share/zeek/base/frameworks/logging - main.zeek
 
+/usr/local/zeek/share/zeek/site - local.zeek
+@load policy/tuning/json-logs.zeek
 
+filebeat.config.modules.path: ${path.config}/modules.d/*.yml
+docker exec -it filebeat filebeat modules enable zeek
+
+modify that zeek.yml inside filebeat container
